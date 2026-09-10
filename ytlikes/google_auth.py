@@ -18,7 +18,8 @@ from ytmusicapi import OAuthCredentials
 
 from .common import SyncError, atomic_write, dpapi, load_auth, save_auth
 
-SCOPE = 'https://www.googleapis.com/auth/youtube.readonly'
+# Match ytmusicapi's scope for YouTube Music; setup explains Google's broad grant.
+SCOPE = 'https://www.googleapis.com/auth/youtube'
 TOKEN_URL = 'https://oauth2.googleapis.com/token'
 
 
@@ -94,7 +95,7 @@ def token_request(client, payload, *, session=None):
             if not 0<ttl<=86400:
                 raise SyncError('google_response_invalid')
             scopes=value.get('scope',SCOPE).split()
-            if SCOPE not in scopes and 'https://www.googleapis.com/auth/youtube' not in scopes:
+            if SCOPE not in scopes:
                 raise SyncError('google_permission_required')
             return value
     except SyncError:

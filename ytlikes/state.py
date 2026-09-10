@@ -18,6 +18,7 @@ class State:
         PRAGMA synchronous=FULL;
         CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS seen (video_id TEXT PRIMARY KEY, first_seen REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS account_baselines (account TEXT PRIMARY KEY, baseline_at REAL NOT NULL);
         CREATE TABLE IF NOT EXISTS jobs (
             video_id TEXT PRIMARY KEY, source TEXT NOT NULL, state TEXT NOT NULL DEFAULT 'pending',
             candidate TEXT, catalog_id TEXT, path TEXT, attempts INTEGER NOT NULL DEFAULT 0,
@@ -37,18 +38,23 @@ class State:
         with self.db:
             self.db.execute("INSERT OR REPLACE INTO meta VALUES (?,?)", (key, json.dumps(value)))
 
-    def baseline(self, songs: list[dict], account: str):
-        if self.get("baseline_at") is not None:
-            if self.get("account") != account:
+    def baseline(self, songs: list[dict], account: str, *, allow_account_change=False):
+        old_time,old_account=self.get('baseline_at'),self.get('account')
+        if old_time is not None:
+            if old_account != account and not allow_account_change:
                 raise SyncError("different_youtube_account")
-            return False
         now = time.time()
         with self.db:
-            self.db.executemany("INSERT OR IGNORE INTO seen VALUES (?,?)",
-                                [(s["video_id"], now) for s in songs])
+            if old_time is not None:
+                self.db.execute('INSERT OR IGNORE INTO account_baselines VALUES (?,?)',(old_account,old_time))
+            known=self.db.execute('SELECT baseline_at FROM account_baselines WHERE account=?',(account,)).fetchone()
+            if known is None:
+                self.db.executemany("INSERT OR IGNORE INTO seen VALUES (?,?)",
+                                    [(s["video_id"], now) for s in songs])
+                self.db.execute('INSERT INTO account_baselines VALUES (?,?)',(account,now))
             self.db.executemany("INSERT OR REPLACE INTO meta VALUES (?,?)",
-                                [("baseline_at", json.dumps(now)), ("account", json.dumps(account))])
-        return True
+                                [("baseline_at", json.dumps(known[0] if known else now)), ("account", json.dumps(account))])
+        return known is None
 
     def unseen(self, songs):
         ids = {row[0] for row in self.db.execute("SELECT video_id FROM seen")}

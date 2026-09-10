@@ -29,6 +29,7 @@ def test_client_import_is_encrypted_and_web_clients_rejected(tmp_path):
 def test_google_redirect_checks_state_uses_pkce_and_never_writes_plaintext(tmp_path,monkeypatch):
     checked=[]
     replies=[]
+    callbacks=[]
     def open_browser(url):
         query=parse_qs(urlsplit(url).query)
         assert url.startswith('https://accounts.google.com/')
@@ -39,7 +40,8 @@ def test_google_redirect_checks_state_uses_pkce_and_never_writes_plaintext(tmp_p
         def callback():
             replies.append(requests.get(redirect,params={'state':'wrong','code':'stolen'},timeout=5).status_code)
             replies.append(requests.get(redirect,params={'state':query['state'][0],'code':'synthetic-code'},timeout=5).status_code)
-        threading.Thread(target=callback).start()
+        callbacks.append(threading.Thread(target=callback))
+        callbacks[-1].start()
         return True
     def exchange(client,payload):
         checked.append(payload)
@@ -49,6 +51,7 @@ def test_google_redirect_checks_state_uses_pkce_and_never_writes_plaintext(tmp_p
     monkeypatch.setattr(auth,'token_request',exchange)
     flow=auth.GoogleSignIn(CLIENT,opener=open_browser,timeout=5)
     result=flow.run()
+    callbacks[0].join(timeout=5)
     assert result['kind']=='google_oauth' and result['tokens']['refresh_token']=='synthetic-refresh'
     assert replies==[400,200] and len(checked)==1
     assert flow.code is None and flow.verifier is None
@@ -157,3 +160,47 @@ def test_html_rate_limit_is_retryable_without_reading_body():
 def test_desktop_redirect_validation(redirects):
     with pytest.raises(SyncError,match='google_desktop_client_required'):
         auth.client_config({**CLIENT,'redirect_uris':redirects})
+
+
+def test_explicit_account_switch_preserves_baselines_downloads_and_seen_history(tmp_path,monkeypatch):
+    from ytlikes import cli
+    state=State(tmp_path)
+    state.baseline([{'video_id':'old-like'}],'old-account')
+    old_time=state.get('baseline_at')
+    state.ingest([{'video_id':'already-downloaded'}])
+    state.completed('already-downloaded','catalog-1',tmp_path/'saved.flac')
+    save_auth(tmp_path,{'cookie':'old-auth'})
+    class NewAccount:
+        def __init__(self,*a,**k): pass
+        def fetch(self): return ([{'video_id':'new-existing'}],'new-account')
+    monkeypatch.setattr(cli,'YouTube',NewAccount)
+    with pytest.raises(SyncError,match='different_youtube_account'):
+        cli.connect_account(state,tmp_path,{'cookie':'new-auth'})
+    assert load_auth(tmp_path)=={'cookie':'old-auth'}
+    connected=cli.connect_account(state,tmp_path,{'cookie':'new-auth'},allow_account_change=True)
+    assert connected['baseline_created'] and connected['downloads_started']==0
+    assert state.get('account')=='new-account'
+    assert state.status()['counts']=={'completed':1}
+    assert not state.unseen([{'video_id':v} for v in ('old-like','already-downloaded','new-existing')])
+    assert state.db.execute('SELECT baseline_at FROM account_baselines WHERE account=?',('old-account',)).fetchone()[0]==old_time
+    assert state.downloaded('catalog-1')==tmp_path/'saved.flac'
+    assert state.baseline([{'video_id':'liked-while-away'}],'old-account',allow_account_change=True) is False
+    assert state.get('baseline_at')==old_time
+    assert state.unseen([{'video_id':'liked-while-away'}])
+    state.close()
+
+
+def test_switch_failed_fetch_preserves_current_account_and_credentials(tmp_path,monkeypatch):
+    from ytlikes import cli
+    state=State(tmp_path); state.baseline([{'video_id':'existing'}],'old-account')
+    save_auth(tmp_path,{'cookie':'old-auth'})
+    before=state.status()
+    class FailedAccount:
+        def __init__(self,*a,**k): pass
+        def fetch(self): raise SyncError('incomplete_likes_snapshot')
+    monkeypatch.setattr(cli,'YouTube',FailedAccount)
+    with pytest.raises(SyncError,match='incomplete_likes_snapshot'):
+        cli.connect_account(state,tmp_path,{'cookie':'new-auth'},allow_account_change=True)
+    assert state.status()==before and state.get('account')=='old-account'
+    assert load_auth(tmp_path)=={'cookie':'old-auth'}
+    state.close()

@@ -25,7 +25,7 @@ This part is for the person configuring the shared application; friends can use 
 1. Create or choose a project in [Google Cloud Console](https://console.cloud.google.com/).
 2. Enable **YouTube Data API v3**.
 3. Configure the Google Auth Platform branding and audience. For a small trial, keep the app in Testing and add your friends as test users.
-4. Configure the read-only scope `https://www.googleapis.com/auth/youtube.readonly`.
+Connection and complete-library retrieval require live validation.
 5. Create an OAuth client with application type **Desktop app**. Download its JSON file.
 6. Import that JSON into the connection window, or provide it locally as `google-client.json` beside the installer.
 
@@ -49,7 +49,7 @@ Files use `Artist\Album\Track - Title [catalog ID].flac`. Catalog matching is au
 
 ## Controls and recovery
 
-- **Connect YouTube Music.cmd** connects or reconnects without resetting an existing baseline. Reconnection must use the same YouTube account.
+- **Connect YouTube Music.cmd** connects or reconnects without resetting an existing baseline. Normal reconnection must use the same YouTube account. For an intentional account change, run `python -m ytlikes.cli setup --switch-account` using the installed virtual environment. The new account starts with its existing likes recorded, while prior baselines, seen-song history, the queue, and downloaded files are retained.
 - **Sync Status.cmd** shows the destination, queue, selected matches, failures, and browser attention state.
 - **Pause Sync.cmd** and **Resume Sync.cmd** control background polling.
 - **Open Monochrome Helper.cmd** explicitly opens the dedicated downloader window.

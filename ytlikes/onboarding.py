@@ -58,7 +58,7 @@ MESSAGES={
 }
 
 
-def complete_setup(root, record, output, *, automatic=True):
+def complete_setup(root, record, output, *, automatic=True,allow_account_change=False):
     from .cli import connect_account, scheduler
     from .state import State
     destination=Path(output).expanduser()
@@ -71,7 +71,7 @@ def complete_setup(root, record, output, *, automatic=True):
     with RunLock(root):
         state=State(root)
         try:
-            result=connect_account(state,root,record)
+            result=connect_account(state,root,record,allow_account_change=allow_account_change)
             settings=installation_settings(root)
             settings['output']=str(destination)
             atomic_write(root/'config.json',json.dumps(settings,indent=2).encode())
@@ -86,14 +86,14 @@ def complete_setup(root, record, output, *, automatic=True):
     return result
 
 
-def run_setup(root):
+def run_setup(root, *, allow_account_change=False):
     import tkinter as tk
     from tkinter import ttk, filedialog
     import webbrowser
     window=tk.Tk()
     window.title('Connect YouTube Music')
-    window.geometry('620x480')
-    window.minsize(550,440)
+    window.geometry('620x540')
+    window.minsize(600,520)
     window.configure(background='#f7f8fa')
     style=ttk.Style(window)
     style.theme_use('vista' if 'vista' in style.theme_names() else 'clam')
@@ -105,7 +105,8 @@ def run_setup(root):
     content.pack(fill='both',expand=True)
     content.columnconfigure(0,weight=1)
     ttk.Label(content,text='Your likes. Saved as FLAC.',style='Title.TLabel').grid(row=0,column=0,sticky='w')
-    ttk.Label(content,text='Connect YouTube Music, then new likes will download here.',style='Setup.TLabel').grid(row=1,column=0,sticky='w',pady=(8,22))
+    subtitle='Connect another account. Downloaded files and history stay intact.' if allow_account_change else 'Connect YouTube Music, then new likes will download here.'
+    ttk.Label(content,text=subtitle,style='Setup.TLabel',wraplength=555).grid(row=1,column=0,sticky='w',pady=(8,22))
     ttk.Label(content,text='Download folder',style='Setup.TLabel').grid(row=2,column=0,sticky='w')
     folder_row=ttk.Frame(content,style='Setup.TFrame')
     folder_row.grid(row=3,column=0,sticky='ew',pady=(6,16))
@@ -118,7 +119,8 @@ def run_setup(root):
         if selected: output.set(selected)
     choose=ttk.Button(folder_row,text='Choose…',command=choose_folder)
     choose.grid(row=0,column=1,padx=(10,0))
-    ttk.Label(content,text='Existing likes stay as they are. Only new likes download.\nLikes from your phone work too, using the same account.',style='Setup.TLabel').grid(row=4,column=0,sticky='w')
+    ttk.Label(content,text='Existing likes stay as they are. Only new likes download.\nLikes from your phone work too, using the same account.\n\nGoogle asks to “Manage your YouTube account” for Music access.\nThis app only reads your account and likes; it makes no changes.',
+              style='Setup.TLabel',wraplength=555).grid(row=4,column=0,sticky='w')
     status=tk.StringVar(value='Sign in on Google’s page. Your password stays with Google.')
     status_label=ttk.Label(content,textvariable=status,wraplength=540,style='Setup.TLabel')
     status_label.grid(row=5,column=0,sticky='ew',pady=(22,10))
@@ -157,7 +159,7 @@ def run_setup(root):
                         return
                     current['commit']=True
                 events.put(('status','Reading your complete liked-songs library…'))
-                connected=complete_setup(root,record,destination)
+                connected=complete_setup(root,record,destination,allow_account_change=allow_account_change)
                 events.put(('done',connected))
             except SyncError as error:
                 events.put(('error',error.code))

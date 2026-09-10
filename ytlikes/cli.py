@@ -67,13 +67,13 @@ def auth_dialog():
     return result[0]
 
 
-def connect_account(state, root, headers):
+def connect_account(state, root, headers, *, allow_account_change=False):
     songs, account = YouTube(headers).fetch()
-    if state.get("baseline_at") is not None and state.get("account") != account:
+    if state.get("baseline_at") is not None and state.get("account") != account and not allow_account_change:
         raise SyncError("different_youtube_account")
     # Saving is atomic and encrypted; failed fetches do not replace working credentials.
     save_auth(root, headers)
-    created = state.baseline(songs, account)
+    created = state.baseline(songs, account,allow_account_change=allow_account_change)
     state.set("auth_required", False)
     state.set("poll_retry_at", 0)
     state.set("poll_failures", 0)
@@ -114,13 +114,14 @@ def main(argv=None):
                                             "install-scheduler", "remove-scheduler", "open-monochrome", "monochrome-status", "configure-api", "api-status"])
     parser.add_argument("--data-dir", type=Path, default=data_dir())
     parser.add_argument("--quiet", action="store_true")
+    parser.add_argument("--switch-account", action="store_true",help="Explicitly connect another account while preserving downloaded files and prior baselines.")
     args = parser.parse_args(argv)
     root = args.data_dir
     state = None
     try:
         if args.command == 'setup':
             from .onboarding import run_setup
-            emit(run_setup(root),args.quiet)
+            emit(run_setup(root,allow_account_change=args.switch_account),args.quiet)
             return 0
         if args.command in ("install-scheduler", "remove-scheduler"):
             if root != data_dir():
