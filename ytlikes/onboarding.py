@@ -220,8 +220,15 @@ def run_setup(root):
     window.bind('<Escape>',lambda event:close())
     window.protocol('WM_DELETE_WINDOW',close)
     window.bind('<Configure>',lambda event:status_label.configure(wraplength=max(400,content.winfo_width()-56)) if event.widget==window else None)
+    def reveal_setup():
+        # Setup is explicitly opened by the user; do not leave it behind a browser.
+        window.deiconify()
+        window.lift()
+        window.attributes('-topmost',True)
+        window.after(600,lambda:window.attributes('-topmost',False))
+        connect.focus_set()
+    window.after(100,reveal_setup)
     window.after(100,poll)
-    connect.focus_set()
     window.mainloop()
     if not result:
         raise SyncError('setup_cancelled')
