@@ -37,6 +37,8 @@ The app configuration and user credentials are deliberately excluded from Git. S
 
 The Google connection implementation has automated coverage for callback validation, cancellation, refresh, encrypted persistence, baseline creation, and reconnect safety. Live compatibility with your Google OAuth project must be verified before calling a build ready for friends.
 
+Connection and complete-library retrieval require live validation.
+
 ## Quiet downloads
 
 Audio downloads use the pinned upstream Monochrome JavaScript engine in one normal, dedicated Edge session. The window stays hidden behind a tray icon. It starts when a download needs it and is reused afterward; no headless browser or automatic native API token exchange is used.
