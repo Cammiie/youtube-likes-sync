@@ -10,9 +10,10 @@ import struct
 import sys
 
 from .common import SyncError, atomic_write, data_dir
+from .runtime import app_dir, assets_dir, bundled
 
 HOST = 'com.youtubelikes.sync'
-PROJECT = Path(__file__).resolve().parents[1]
+PROJECT = assets_dir()
 MAX_MESSAGE = 128 * 1024
 
 
@@ -110,14 +111,15 @@ def register(root=None):
     import winreg
     root = root or data_dir()
     folder = root/'native-messaging'
-    python = PROJECT/'.venv/Scripts/python.exe'
+    python = app_dir()/'YouTubeLikesSync.Console.exe' if bundled() else PROJECT/'.venv/Scripts/python.exe'
     if not python.is_file():
         raise SyncError('extension_install_required')
     # Batch values are quoted and percent-escaped, never derived from browser input.
     executable = str(python).replace('%', '%%')
     project = str(PROJECT).replace('%', '%%')
     launcher = folder/'host.cmd'
-    atomic_write(launcher, (f'@echo off\r\nsetlocal DisableDelayedExpansion\r\nchcp 65001 >nul\r\ncd /d "{project}"\r\n"{executable}" -m ytlikes.extension_host %*\r\n').encode('utf-8'))
+    arguments = 'native-host' if bundled() else '-m ytlikes.extension_host'
+    atomic_write(launcher, (f'@echo off\r\nsetlocal DisableDelayedExpansion\r\nchcp 65001 >nul\r\ncd /d "{project}"\r\n"{executable}" {arguments} %*\r\n').encode('utf-8'))
     manifest = folder/'host.json'
     atomic_write(manifest, json.dumps({'name': HOST, 'description': 'YouTube Likes Sync local connector',
         'path': str(launcher), 'type': 'stdio', 'allowed_origins': [f'chrome-extension://{extension_id()}/']}).encode())

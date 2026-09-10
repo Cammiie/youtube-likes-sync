@@ -4,18 +4,22 @@ Save future YouTube Music likes as matching FLAC tracks on Windows. Likes made o
 
 Existing likes become a baseline when you first connect. They are not downloaded. Unliking a song never deletes a file, and liking it again does not download it twice.
 
+## Install on Windows
+
+Download **YouTubeLikesSync-Setup-0.3.0-windows-x64.exe** from [GitHub Releases](https://github.com/Cammiie/youtube-likes-sync/releases/latest) and run it. The installer includes Python, the built Monochrome engine, and FFmpeg. It registers the local connector and sets up automatic checks. Windows 10/11 x64 and Microsoft Edge are required. No separate Python, Node.js, or Google Cloud setup is needed. The installer is currently unsigned, so Windows may show an unknown-publisher warning.
+
 ## Connect with the browser extension
 
-1. Extract the app to a permanent folder and run **Install.cmd**. It installs the local connector and opens **Connect YouTube Music**.
+1. Open **Connect YouTube Music** from the installer or Start menu.
 2. Choose Brave, Edge, or Chrome in that window and click **Open Extensions**. Turn on **Developer mode**, choose **Load unpacked**, and select the app's `extension` folder. The window can copy the folder path for you.
 3. Open YouTube Music in that browser and sign in normally. Select the account you want to sync and open its Library.
 4. Click the **YouTube Likes Sync** extension, check the download folder, and click **Connect YouTube Music**. It briefly reloads the selected Music tab, checks every accessible page of likes, then reports **Connected**.
 
 For a different account, explicitly check **Use this as a different sync account** before connecting. Its current likes become a new baseline; existing files, mappings, prior baselines, and the queue remain intact. Reconnecting the same account preserves its baseline.
 
-Connection and complete-library retrieval require live validation.
+**No Google Cloud project, OAuth client file, or copied DevTools headers are needed.** The complete connection flow has been tested in Brave, including full baseline retrieval and a repeat check without duplicates. Only future likes are queued. Likes made on a phone work when they belong to that same account.
 
-The extension is currently loaded locally, not published in a browser store. Friends need both the Windows app and extension. The source installer requires Python 3.11+ with Tkinter, Node/npm, and Edge for the dedicated downloader. Keep the extracted folder in place. Store publishing and a standalone app installer are separate release steps.
+The extension is included with the Windows app and currently loaded locally, not published in a browser store. Keep the installed app in place so the browser can find the extension. Browser-store publication is a separate step. Advanced users building from source can download the repository ZIP and run Install.cmd; that source-only route requires Python 3.11+ with Tkinter and Node/npm.
 
 ## Connection privacy and recovery
 
@@ -23,11 +27,11 @@ The extension has access only to `music.youtube.com`. After you click Connect, i
 
 YouTube can expire or rotate browser sessions. If polling needs reconnection, open your signed-in Music Library and click Connect again. The extension is not an automatic credential monitor. Removing it does not erase the local app's saved connection. To disconnect fully, pause/remove scheduling and remove local `auth.dpapi`; keep the database if you want to retain deduplication history. Signing out of the browser may also invalidate the saved session.
 
-**Connect YouTube Music.cmd** repairs native-host registration and opens installation guidance. If the extension says the app is missing, run that command or **Install.cmd**, then reopen the extension. The local connector is registered for the current Windows user in Brave, Edge, and Chrome. Live end-to-end acceptance is confirmed on Brave; the other supported Chromium browsers use the same protocol but have not been live-tested on this PC.
+The **Connect YouTube Music** Start-menu entry repairs native-host registration and opens installation guidance. Source installs use **Connect YouTube Music.cmd**. If the extension says the app is missing, repair the connector and reopen the extension. The connector is registered for the current Windows user in Brave, Edge, and Chrome. Live end-to-end acceptance is confirmed on Brave; Edge and Chrome use the same implemented protocol but are not independently verified.
 
-Google desktop OAuth remains available experimentally as `python -m ytlikes.cli setup-google`. The Google app is public/unverified with a 100-user cap, but Music rejected its tokens with HTTP 400 despite successful Google login and official YouTube Data API access. It is not used by the extension. Legacy `setup-headers` and `setup-clipboard` remain available for troubleshooting.
+Google desktop OAuth remains available experimentally as `python -m ytlikes.cli setup-google`. Music rejected tested OAuth tokens with HTTP 400 despite successful Google login and official YouTube Data API access. It is not used by the extension. Legacy `setup-headers` and `setup-clipboard` remain available for troubleshooting.
 
-Connection and complete-library retrieval require live validation.
+[Privacy and local data](PRIVACY.md).
 
 ## Quiet downloads
 
@@ -53,9 +57,15 @@ The old DevTools connection flow remains available as `python -m ytlikes.cli set
 
 Runtime data lives in the current user's LocalAppData. An ignored `runtime-path.json` may pin the physical location for packaged Windows environments. Do not copy that file, runtime databases, `.dpapi` files, browser profiles, or `.venv` to another PC.
 
+## Uninstall
+
+Use Windows Installed apps to uninstall YouTube Likes Sync. The uninstaller removes integration owned by that installation. Downloaded music and local credentials/history are retained; remove the runtime data separately if you also want to erase your connection and history. Removing the app does not automatically remove the unpacked browser extension.
+
 ## Development
 
 Run `install.ps1` to install pinned dependencies. Browser source is pinned by `monochrome-source.json` and its dependency lock; `tools/build_monochrome.py` builds the local worker.
+
+Bundled builds use PyInstaller 6.22.0 and Inno Setup 6.7.3. See packaging/build.ps1 and packaging/app.spec. Build from a clean checkout, supply a built ytlikes-dist directory, and inspect dependency notices and privacy audit results before publishing.
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q

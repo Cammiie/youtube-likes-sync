@@ -13,6 +13,7 @@ from .browser_host import BASE, browser_status
 from .common import SyncError, data_dir, dpapi, config, atomic_write
 import json
 from .media import Downloader, run_ffmpeg, validate
+from .runtime import command, engine_dir
 
 
 def bridge_session(root):
@@ -40,7 +41,7 @@ def ensure_host(root=None):
     root = root or data_dir()
     if not config(root).get('browser_launch_allowed', False):
         raise SyncError('browser_disabled', 86400)
-    if not (root / 'monochrome/ytlikes-dist/worker.html').is_file():
+    if not (engine_dir(root) / 'worker.html').is_file():
         raise SyncError('monochrome_install_required', 86400)
     s = bridge_session(root)
     try:
@@ -48,8 +49,7 @@ def ensure_host(root=None):
             return s
     except (requests.RequestException, ValueError):
         pass
-    pythonw = Path(sys.executable).with_name('pythonw.exe')
-    subprocess.Popen([str(pythonw), '-m', 'ytlikes.browser_host'], stdin=subprocess.DEVNULL,
+    subprocess.Popen(command('ytlikes.browser_host'), stdin=subprocess.DEVNULL,
                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                      creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP)
     deadline = time.monotonic()+20

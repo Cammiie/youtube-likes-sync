@@ -10,6 +10,7 @@ import time
 
 from .browser_host import BASE, PORT, Handler, Host, ThreadingHTTPServer
 from .common import SyncError, atomic_write, config, dpapi
+from .runtime import engine_dir
 
 
 def renewal_status(root):
@@ -42,7 +43,7 @@ def validate_access(root, settings, *, api=None):
 
 def run_verification(root, *, api=None):
     """Called under the main worker lock. Own and close just this window/server."""
-    if not (root/'monochrome/ytlikes-dist/verify-api.html').is_file():
+    if not (engine_dir(root)/'verify-api.html').is_file():
         raise SyncError('api_verification_assets_missing')
     binary = Path(os.environ.get('PROGRAMFILES(X86)','C:/Program Files (x86)'))/'Microsoft/Edge/Application/msedge.exe'
     if not binary.is_file():

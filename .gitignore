@@ -27,6 +27,7 @@ browser.json
 *.wav
 /dist/
 /build/
+/build-assets/
 /artifacts/
 /monochrome-browser/
 /bridge-downloads/

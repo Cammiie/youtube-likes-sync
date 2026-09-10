@@ -17,6 +17,7 @@ import sys
 from urllib.parse import urlsplit, unquote
 
 from .common import RunLock, atomic_write, config, data_dir, dpapi
+from .runtime import command, engine_dir
 
 PORT = 18767
 BASE = f"http://localhost:{PORT}"
@@ -46,7 +47,7 @@ class ThreadingHTTPServer(_ThreadingHTTPServer):
 class Host:
     def __init__(self, root, *, launch_browser=True):
         self.root = root
-        self.dist = root / 'monochrome/ytlikes-dist'
+        self.dist = engine_dir(root)
         self.spool = root / 'bridge-downloads'
         self.spool.mkdir(parents=True, exist_ok=True)
         key_path = root / 'bridge-key.dpapi'
@@ -195,7 +196,7 @@ class Host:
                             self.save_policy()
                 if self.kick_at and time.time() >= self.kick_at:
                     self.kick_at = 0
-                    subprocess.Popen([str(Path(sys.executable).with_name('pythonw.exe')), '-m','ytlikes.cli','sync','--quiet'],
+                    subprocess.Popen(command('ytlikes.cli', 'sync', '--quiet'),
                                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, creationflags=subprocess.CREATE_NO_WINDOW)
             except Exception:
                 self.attention = 'monochrome_window_control_failed'

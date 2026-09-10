@@ -100,8 +100,10 @@ def doctor(provider):
 
 
 def scheduler(action):
-    script = Path(__file__).resolve().parent.parent / "schedule.ps1"
-    process = subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script), "-Action", action],
+    from .runtime import assets_dir, app_dir, bundled
+    script = assets_dir() / "schedule.ps1"
+    extra = ['-Executable', str(app_dir()/'YouTubeLikesSync.exe'), '-WorkingDirectory', str(app_dir())] if bundled() else []
+    process = subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", str(script), "-Action", action, *extra],
                              capture_output=True, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
     if process.returncode:
         raise SyncError("scheduler_operation_failed")

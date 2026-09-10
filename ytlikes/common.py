@@ -18,7 +18,8 @@ class SyncError(Exception):
 def data_dir() -> Path:
     # Codex's packaged Windows process can virtualize LocalAppData writes. Pin
     # the actual directory so a normal Task Scheduler process sees the same DB.
-    location = Path(__file__).resolve().parents[1] / 'runtime-path.json'
+    from .runtime import app_dir
+    location = app_dir() / 'runtime-path.json'
     if location.exists():
         configured = Path(json.loads(location.read_text(encoding='utf-8'))['data_dir'])
         if configured.is_absolute():

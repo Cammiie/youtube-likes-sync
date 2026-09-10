@@ -60,7 +60,8 @@ def load_client(root):
     try:
         return client_config(json.loads(dpapi((root/'google-client.dpapi').read_bytes(),decrypt=True)))
     except FileNotFoundError:
-        supplied=Path(__file__).resolve().parents[1]/'google-client.json'
+        from .runtime import app_dir
+        supplied=app_dir()/'google-client.json'
         if supplied.is_file():
             return import_client(root,supplied)
         raise SyncError('google_client_required') from None
