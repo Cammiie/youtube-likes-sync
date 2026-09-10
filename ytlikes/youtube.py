@@ -99,9 +99,30 @@ class CompleteYTMusic(YTMusic):
 
     def _send_request(self, endpoint, body, additionalParams=''):
         response = super()._send_request(endpoint, body, additionalParams)
+        if endpoint == 'browse' and body.get('browseId') == 'VLLM':
+            # Expired browser sessions can return HTTP 200 with a sign-in page.
+            # Inspect structure only; upstream exception text may contain secrets.
+            def contains_key(value, key):
+                if isinstance(value, dict):
+                    return key in value or any(contains_key(v, key) for v in value.values())
+                if isinstance(value, list):
+                    return any(contains_key(v, key) for v in value)
+                return False
+            if (contains_key(response, 'signInEndpoint')
+                    and not contains_key(response, 'musicPlaylistShelfRenderer')):
+                raise SyncError('youtube_auth_required')
         if self._likes_audit is not None and endpoint == 'browse':
             self._likes_audit.observe(body, response)
         return response
+
+    def get_account_info(self):
+        try:
+            return super().get_account_info()
+        except KeyError:
+            # The signed-out account menu has no account header. Confirm using
+            # the private likes page before classifying an unfamiliar response.
+            self._send_request('browse', {'browseId': 'VLLM'})
+            raise
 
     def get_liked_songs(self, limit=None):
         self.likes_snapshot_complete = False
