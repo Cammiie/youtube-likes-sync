@@ -1,0 +1,36 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Likes Sync",
+  "version": "0.1.0",
+  "description": "Connect your YouTube Music account to the local YouTube Likes Sync Windows app.",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAnYamSOb6y697QhfAZsp3lkbzSzubS7Yq3Y+xsqQ+TOiRnmrbfOn+xh+Y2KOsUtE7dZ0Pf9pJM5yZO9Cab21bt5JDgXJBWIORa7LF9wKwKftZSGM8lomhs+las5ClN9WL6kK5hFeygitYbyusbdzR4RATs9Qq+ptltkDCG2t7s0xgWk1EuKmrZVgyUfr1gV9fQTIKDxfMGyFQZDtbmhsd7D8KNlnZIr8t1nEPmkhuTFtCxZWhMmzkTWDIFpUVyUQDSh5HOUsvep4v/Jef9u9ZDeiIdtg0nEIDnNf/by+4Yst+sGAJA5xkzmZ7aMtUvuh9ciqvXhUiDSkEzdrlsaiiiwIDAQAB",
+  "minimum_chrome_version": "105",
+  "permissions": [
+    "activeTab",
+    "webRequest",
+    "nativeMessaging",
+    "storage"
+  ],
+  "host_permissions": [
+    "https://music.youtube.com/*"
+  ],
+  "background": {
+    "service_worker": "worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Connect YouTube Music",
+    "default_icon": {
+      "16": "icon-16.png",
+      "32": "icon-32.png"
+    }
+  },
+  "incognito": "not_allowed",
+  "icons": {
+    "16": "icon-16.png",
+    "32": "icon-32.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
+  }
+}

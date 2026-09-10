@@ -4,42 +4,28 @@ Save future YouTube Music likes as matching FLAC tracks on Windows. Likes made o
 
 Existing likes become a baseline when you first connect. They are not downloaded. Unliking a song never deletes a file, and liking it again does not download it twice.
 
-## Install
+## Connect with the browser extension
 
-Requirements: Windows 10/11, Python 3.11 or newer with Tkinter, Node.js LTS with npm, and Microsoft Edge. This is currently a source installation, not a standalone executable.
+1. Extract the app to a permanent folder and run **Install.cmd**. It installs the local connector and opens **Connect YouTube Music**.
+2. Choose Brave, Edge, or Chrome in that window and click **Open Extensions**. Turn on **Developer mode**, choose **Load unpacked**, and select the app's `extension` folder. The window can copy the folder path for you.
+3. Open YouTube Music in that browser and sign in normally. Select the account you want to sync and open its Library.
+4. Click the **YouTube Likes Sync** extension, check the download folder, and click **Connect YouTube Music**. It briefly reloads the selected Music tab, checks every accessible page of likes, then reports **Connected**.
 
-1. Clone or download this repository into a folder you will keep.
-2. Run **Install.cmd**. It installs the Python environment, builds the pinned Monochrome browser engine, and registers a task that runs every five minutes and at sign-in.
-3. In **Connect YouTube Music**, choose your download folder and click **Sign in with Google**.
-4. Approve read access on Google's page. The app checks your entire accessible liked-songs library and finishes automatically.
-5. Like a new song to test downloading. Use **Sync Status.cmd** to see pending tracks and completed files.
+For a different account, explicitly check **Use this as a different sync account** before connecting. Its current likes become a new baseline; existing files, mappings, prior baselines, and the queue remain intact. Reconnecting the same account preserves its baseline.
 
-Google sign-in needs an OAuth application configuration first. If the person sharing the app supplied `google-client.json`, place it next to `Install.cmd` before connecting. Otherwise use **Import app configuration** with the Desktop app client JSON downloaded from Google Cloud. Never share your Google password, browser cookies, or personal OAuth tokens.
-
-New installations default to your Music folder. If CrammyPlayer has exactly one existing recursively watched library folder, that folder's `YouTube Likes` subfolder is suggested. Existing installations retain their configured destination and connection until a replacement connection passes validation.
-
-## Current connection limitation
-
-Live testing on September 10, 2026 confirmed that Google desktop sign-in and token refresh succeed, and the official YouTube Data API accepts the token, but YouTube Music rejects account and liked-songs requests with HTTP 400 `INVALID_ARGUMENT`. The new account is not activated. Repeating consent did not resolve this. Google onboarding is experimental and is not ready for friends; existing browser-header connections remain supported. No fallback silently substitutes ordinary YouTube likes for the Music library.
-
-## One-time Google app setup
-
-This part is for the person configuring the shared application; friends can use the same application configuration with their own Google accounts.
-
-1. Create or choose a project in [Google Cloud Console](https://console.cloud.google.com/).
-2. Enable **YouTube Data API v3**.
-3. Configure the Google Auth Platform branding and audience. For a small trial, keep the app in Testing and add your friends as test users.
 Connection and complete-library retrieval require live validation.
-5. Create an OAuth client with application type **Desktop app**. Download its JSON file.
-6. Import that JSON into the connection window, or provide it locally as `google-client.json` beside the installer.
 
-The application uses Google's desktop authorization flow with PKCE and a temporary loopback callback. It does not use a TV/device-code client, embedded Google login page, or a manual authorization-code paste. See [Google's desktop OAuth documentation](https://developers.google.com/identity/protocols/oauth2/native-app).
+The extension is currently loaded locally, not published in a browser store. Friends need both the Windows app and extension. The source installer requires Python 3.11+ with Tkinter, Node/npm, and Edge for the dedicated downloader. Keep the extracted folder in place. Store publishing and a standalone app installer are separate release steps.
 
-Testing-mode consent has Google-imposed limits and may require periodic reconnection. Broader distribution may require publishing/verifying the OAuth application. Consult [Google's OAuth production guidance](https://developers.google.com/identity/protocols/oauth2/production-readiness/policy-compliance).
+## Connection privacy and recovery
 
-The app configuration and user credentials are deliberately excluded from Git. Share the app configuration separately with intended users; each person's refresh tokens remain on their own PC under Windows current-user DPAPI. A fresh clone without app configuration cannot sign in yet.
+The extension has access only to `music.youtube.com`. After you click Connect, it observes one signed-in library request from the selected tab and sends only the required session headers directly to the local app using native messaging. It does not use an HTTP bridge, upload credentials, modify requests, or store cookies in extension storage. The native host accepts only this extension's fixed ID and protects accepted credentials with current-user Windows DPAPI. A failed or incomplete library check preserves the active connection and baseline.
 
-The Google connection implementation has automated coverage for callback validation, cancellation, refresh, encrypted persistence, baseline creation, and reconnect safety. Live compatibility with your Google OAuth project must be verified before calling a build ready for friends.
+YouTube can expire or rotate browser sessions. If polling needs reconnection, open your signed-in Music Library and click Connect again. The extension is not an automatic credential monitor. Removing it does not erase the local app's saved connection. To disconnect fully, pause/remove scheduling and remove local `auth.dpapi`; keep the database if you want to retain deduplication history. Signing out of the browser may also invalidate the saved session.
+
+**Connect YouTube Music.cmd** repairs native-host registration and opens installation guidance. If the extension says the app is missing, run that command or **Install.cmd**, then reopen the extension. The local connector is registered for the current Windows user in Brave, Edge, and Chrome. Live end-to-end acceptance is confirmed on Brave; the other supported Chromium browsers use the same protocol but have not been live-tested on this PC.
+
+Google desktop OAuth remains available experimentally as `python -m ytlikes.cli setup-google`. The Google app is public/unverified with a 100-user cap, but Music rejected its tokens with HTTP 400 despite successful Google login and official YouTube Data API access. It is not used by the extension. Legacy `setup-headers` and `setup-clipboard` remain available for troubleshooting.
 
 Connection and complete-library retrieval require live validation.
 
@@ -55,7 +41,7 @@ Files use `Artist\Album\Track - Title [catalog ID].flac`. Catalog matching is au
 
 ## Controls and recovery
 
-- **Connect YouTube Music.cmd** connects or reconnects without resetting an existing baseline. Normal reconnection must use the same YouTube account. For an intentional account change, run `python -m ytlikes.cli setup --switch-account` using the installed virtual environment. The new account starts with its existing likes recorded, while prior baselines, seen-song history, the queue, and downloaded files are retained.
+- **Connect YouTube Music.cmd** opens extension setup and repairs the local connector. Connect/reconnect from the extension popup; use its explicit account-switch checkbox when changing accounts.
 - **Sync Status.cmd** shows the destination, queue, selected matches, failures, and browser attention state.
 - **Pause Sync.cmd** and **Resume Sync.cmd** control background polling.
 - **Open Monochrome Helper.cmd** explicitly opens the dedicated downloader window.
@@ -63,7 +49,7 @@ Files use `Artist\Album\Track - Title [catalog ID].flac`. Catalog matching is au
 - `python -m ytlikes.cli retry` requests another attempt for pending tracks; use the installed virtual environment.
 - `python -m ytlikes.cli remove-scheduler` removes automatic checks without deleting music or connection data. Use Quit and pause to close an already-running tray helper.
 
-The old DevTools connection flow remains available as `python -m ytlikes.cli setup-headers` for troubleshooting; it is currently the working connection method; Google onboarding remains experimental. Native API configuration commands are retained for existing installations, but they are not required by the browser downloader.
+The old DevTools connection flow remains available as `python -m ytlikes.cli setup-headers` for troubleshooting; the extension is the normal connection method. Native API configuration commands are retained for existing installations, but they are not required by the browser downloader.
 
 Runtime data lives in the current user's LocalAppData. An ignored `runtime-path.json` may pin the physical location for packaged Windows environments. Do not copy that file, runtime databases, `.dpapi` files, browser profiles, or `.venv` to another PC.
 
@@ -73,7 +59,7 @@ Run `install.ps1` to install pinned dependencies. Browser source is pinned by `m
 
 ```powershell
 .\.venv\Scripts\python.exe -m pytest -q
-node --test tests/test_browser_diagnostics.mjs
+node --test tests/test_browser_diagnostics.mjs tests/test_extension.mjs
 ```
 
 Monochrome source/license notices and narrow raw-audio/stream-copy changes are described in `THIRD_PARTY_NOTICES.txt`. The upstream Apache-2.0 license is included. Dependencies retain their own licenses, including pystray's LGPL notices. This project is not affiliated with Google, YouTube, Monochrome, or the audio providers.

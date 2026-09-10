@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Connect YouTube Music</title><link rel="stylesheet" href="popup.css"></head>
+<body><main>
+  <h1>Your likes.<br>Your music folder.</h1>
+  <p>Connect the account open in your YouTube Music tab.</p>
+  <label for="output">Download folder</label>
+  <input id="output" type="text" spellcheck="false" autocomplete="off" placeholder="Checking the Windows app…">
+  <p class="hint">Existing likes stay as they are. Only new likes download.</p>
+  <label class="switch"><input id="switchAccount" type="checkbox"><span>Use this as a different sync account.<small>Keep downloaded files and previous history.</small></span></label>
+  <div id="status" role="status" aria-live="polite">Checking the Windows app…</div>
+  <button id="connect" disabled>Connect YouTube Music</button>
+  <button id="open" class="secondary">Open YouTube Music</button>
+  <p class="privacy">Connect briefly reloads your Music tab. Your session goes directly to the Windows app and is encrypted on this PC. The extension saves no cookies.</p>
+</main><script type="module" src="popup.js"></script></body></html>

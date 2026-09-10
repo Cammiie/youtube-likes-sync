@@ -110,7 +110,7 @@ def scheduler(action):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description="Automatically save future YouTube Music likes as Monochrome FLAC.")
-    parser.add_argument("command", choices=["setup", "setup-headers", "setup-clipboard", "sync", "dry-run", "status", "retry", "pause", "resume", "doctor",
+    parser.add_argument("command", choices=["setup", "setup-google", "setup-headers", "setup-clipboard", "sync", "dry-run", "status", "retry", "pause", "resume", "doctor",
                                             "install-scheduler", "remove-scheduler", "open-monochrome", "monochrome-status", "configure-api", "api-status"])
     parser.add_argument("--data-dir", type=Path, default=data_dir())
     parser.add_argument("--quiet", action="store_true")
@@ -120,6 +120,10 @@ def main(argv=None):
     state = None
     try:
         if args.command == 'setup':
+            from .extension_setup import run_setup
+            emit(run_setup(root,allow_account_change=args.switch_account),args.quiet)
+            return 0
+        if args.command == 'setup-google':
             from .onboarding import run_setup
             emit(run_setup(root,allow_account_change=args.switch_account),args.quiet)
             return 0

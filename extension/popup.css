@@ -1,0 +1,23 @@
+:root {color-scheme: light; font: 14px/1.5 'Segoe UI', sans-serif; color: #17354b; background: #f7f8fa;}
+* {box-sizing: border-box;}
+body {margin: 0; width: 376px;}
+main {padding: 24px;}
+h1 {font-size: 27px; line-height: 1.16; letter-spacing: -.025em; margin: 0 0 12px; font-weight: 650;}
+p {margin: 0 0 22px;}
+label {display: block; margin-bottom: 6px; font-weight: 600;}
+input[type=text] {width: 100%; padding: 10px; border: 1px solid #8594a1; border-radius: 5px; font: inherit; color: #17354b; background: white; caret-color: #17354b;}
+input::placeholder {color: #536676;}
+.hint {font-size: 12px; margin: 7px 0 20px; color: #455c6d;}
+.switch {display: flex; gap: 8px; align-items: flex-start; font-size: 13px; font-weight: 400; margin: 0 0 18px;}
+input[type=checkbox] {margin: 4px 0 0; accent-color: #173b54;}
+small {display: block; font-size: 12px; color: #455c6d;}
+#status {font-size: 13px; margin-bottom: 15px; overflow-wrap: anywhere;}
+#status[data-error=true] {color: #9c2e28;}
+button {display: block; width: 100%; padding: 11px 12px; border: 1px solid #173b54; border-radius: 5px; background: #173b54; color: white; font: 600 14px 'Segoe UI', sans-serif; cursor: pointer;}
+button:hover {background: #254f6b;}
+button:disabled {opacity: .55; cursor: default;}
+.secondary {margin-top: 9px; background: transparent; color: #173b54; border-color: #9baab4;}
+.secondary:hover {background: #e9eef2;}
+.privacy {font-size: 12px; line-height: 1.5; color: #455c6d; margin: 19px 0 0;}
+:focus-visible {outline: 3px solid #237bad; outline-offset: 3px;}
+::selection {color: white; background: #173b54;}
