@@ -1,0 +1,7 @@
+{
+  "installed": {
+    "client_id": "REPLACE_WITH_YOUR_CLIENT_ID.apps.googleusercontent.com",
+    "client_secret": "REPLACE_LOCALLY_DO_NOT_COMMIT",
+    "redirect_uris": ["http://localhost"]
+  }
+}

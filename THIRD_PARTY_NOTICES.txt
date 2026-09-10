@@ -1,0 +1,36 @@
+YouTube Likes Sync
+
+This project installs and runs the Monochrome browser download engine from
+monochrome-music/monochrome, commit
+60b76d0d9258b9aabc6a9ee83cb8a54bd76ce90b:
+https://github.com/monochrome-music/monochrome
+Monochrome is distributed under Apache License 2.0. Its source and dependency
+notices are preserved in the installed runtime tree. A copy of the upstream
+license is included at licenses/monochrome-Apache-2.0.txt.
+
+Modification: tools/build_monochrome.py adds a ytlikesRawDownload option to
+js/api.js, returning the downloaded Blob before upstream audio postprocessing.
+This allows native source-codec validation and prevents conversion of lossy audio
+to FLAC. A second narrow change makes the optional encrypted-audio branch use
+stream copy instead of FLAC encoding for ytlikesRawDownload, so lossy sources
+cannot be converted to satisfy the FLAC requirement. This path is disabled by
+default through allow_encrypted_lossless. browser/worker.js calls the upstream LosslessAPI.downloadTrack method;
+the accompanying loopback bridge and Python watcher are separate project code.
+Upstream's normal browser verification flow is retained. The original api.js
+is preserved as api.js.upstream in the runtime source tree.
+
+Python dependencies retain their own notices and licenses in .venv/Lib/site-packages.
+The unified_native engine in ytlikes/unified.py ports lookup parameters and
+playback resource selection from the same pinned Monochrome api.js. It uses
+native HTTP and FFmpeg stream copy, without browser verification or fallback.
+This installation uses the browser engine with a dedicated normal Edge profile
+and notification-area controls. Native API renewal is disabled. The optional
+native engine and authenticated migration remain available in the source.
+The tray controller subclasses pystray 0.19.5 (LGPLv3), distributed unmodified
+in the virtual environment with COPYING and COPYING.LGPL. Its source is at
+https://github.com/moses-palmer/pystray. psutil and Pillow retain their own
+license notices in the virtual environment. The application source, including
+the tray subclass, is available in ytlikes/browser_desktop.py.
+imageio-ffmpeg includes an FFmpeg executable; its distribution includes the
+applicable FFmpeg license information. See the installed distribution and
+https://github.com/imageio/imageio-ffmpeg for upstream licensing details.

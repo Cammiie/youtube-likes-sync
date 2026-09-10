@@ -1,0 +1,5 @@
+# Synthetic AES keys used only to encrypt generated test tones and example API responses.
+tests/test_encrypted_audio_gate.py:generic-api-key:9
+tests/test_unified.py:generic-api-key:31
+tests/test_unified.py:generic-api-key:62
+tests/test_unified.py:generic-api-key:114
