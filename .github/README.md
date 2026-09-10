@@ -18,6 +18,10 @@ Google sign-in needs an OAuth application configuration first. If the person sha
 
 New installations default to your Music folder. If CrammyPlayer has exactly one existing recursively watched library folder, that folder's `YouTube Likes` subfolder is suggested. Existing installations retain their configured destination and connection until a replacement connection passes validation.
 
+## Current connection limitation
+
+Live testing on September 10, 2026 confirmed that Google desktop sign-in and token refresh succeed, and the official YouTube Data API accepts the token, but YouTube Music rejects account and liked-songs requests with HTTP 400 `INVALID_ARGUMENT`. The new account is not activated. Repeating consent did not resolve this. Google onboarding is experimental and is not ready for friends; existing browser-header connections remain supported. No fallback silently substitutes ordinary YouTube likes for the Music library.
+
 ## One-time Google app setup
 
 This part is for the person configuring the shared application; friends can use the same application configuration with their own Google accounts.
@@ -59,7 +63,7 @@ Files use `Artist\Album\Track - Title [catalog ID].flac`. Catalog matching is au
 - `python -m ytlikes.cli retry` requests another attempt for pending tracks; use the installed virtual environment.
 - `python -m ytlikes.cli remove-scheduler` removes automatic checks without deleting music or connection data. Use Quit and pause to close an already-running tray helper.
 
-The old DevTools connection flow remains available as `python -m ytlikes.cli setup-headers` for troubleshooting; it is not the normal onboarding path. Native API configuration commands are retained for existing installations, but they are not required by the browser downloader.
+The old DevTools connection flow remains available as `python -m ytlikes.cli setup-headers` for troubleshooting; it is currently the working connection method; Google onboarding remains experimental. Native API configuration commands are retained for existing installations, but they are not required by the browser downloader.
 
 Runtime data lives in the current user's LocalAppData. An ignored `runtime-path.json` may pin the physical location for packaged Windows environments. Do not copy that file, runtime databases, `.dpapi` files, browser profiles, or `.venv` to another PC.
 

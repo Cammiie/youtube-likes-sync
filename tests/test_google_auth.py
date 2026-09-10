@@ -204,3 +204,32 @@ def test_switch_failed_fetch_preserves_current_account_and_credentials(tmp_path,
     assert state.status()==before and state.get('account')=='old-account'
     assert load_auth(tmp_path)=={'cookie':'old-auth'}
     state.close()
+
+
+@pytest.mark.parametrize('oauth,expected',[(True,'youtube_music_oauth_rejected'),(False,'youtube_response_changed')])
+def test_music_invalid_argument_is_distinguished_from_consent_failure(oauth,expected):
+    from ytmusicapi.exceptions import YTMusicServerError
+    class Rejected:
+        def get_account_info(self):
+            raise YTMusicServerError('Server returned HTTP 400: Request contains an invalid argument. SECRET')
+    record={'kind':'google_oauth','client':CLIENT,'tokens':auth.finish_tokens(TOKEN)} if oauth else {'cookie':'synthetic'}
+    with pytest.raises(SyncError,match=expected) as caught:
+        YouTube(record,client=Rejected()).fetch()
+    assert 'SECRET' not in str(caught.value)
+
+
+def test_rejected_oauth_setup_preserves_active_state_and_cleans_candidate(tmp_path,monkeypatch):
+    from ytlikes import cli
+    class Rejected:
+        def __init__(self,*a,**k): pass
+        def fetch(self): raise SyncError('youtube_music_oauth_rejected')
+    monkeypatch.setattr(cli,'YouTube',Rejected)
+    state=State(tmp_path); state.baseline([{'video_id':'old'}],'old-account')
+    before=state.status(); state.close()
+    save_auth(tmp_path,{'cookie':'old-auth'})
+    record={'kind':'google_oauth','client':CLIENT,'tokens':auth.finish_tokens(TOKEN)}
+    with pytest.raises(SyncError,match='youtube_music_oauth_rejected'):
+        complete_setup(tmp_path,record,str(tmp_path/'music'),automatic=False,allow_account_change=True)
+    assert load_auth(tmp_path)=={'cookie':'old-auth'}
+    assert not (tmp_path/'google-pending.dpapi').exists()
+    state=State(tmp_path); assert state.status()==before; state.close()

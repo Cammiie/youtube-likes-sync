@@ -7,8 +7,9 @@ from pathlib import Path
 import queue
 import sqlite3
 import threading
+import time
 
-from .common import SyncError, RunLock, atomic_write, config
+from .common import SyncError, RunLock, atomic_write, config, dpapi
 from .google_auth import GoogleSignIn, import_client, load_client
 
 
@@ -39,7 +40,7 @@ MESSAGES={
     'google_client_invalid':'This Google client file could not be used. Import the correct client JSON and try again.',
     'google_desktop_client_required':'Choose a Google OAuth client of type Desktop app, then import its JSON file.',
     'google_access_denied':'Access was not granted. You can try Google sign-in again.',
-    'google_permission_required':'Allow read access to YouTube when Google asks, then try again.',
+    'google_permission_required':'Review and approve the YouTube permission shown by Google, then try again.',
     'google_offline_access_required':'Google did not grant background access. Try signing in again and approve access.',
     'google_signin_timeout':'Sign-in timed out. Click Sign in with Google to try again.',
     'google_browser_open_failed':'The browser could not open. Check your default browser and try again.',
@@ -51,6 +52,7 @@ MESSAGES={
     'incomplete_likes_snapshot':'We could not read all your likes. Nothing was changed. Please try again.',
     'youtube_auth_required':'YouTube did not accept this connection. Check the Google app permissions and try again.',
     'youtube_response_changed':'Google sign-in returned, but YouTube Music could not read your library. Your existing connection is unchanged.',
+    'youtube_music_oauth_rejected':'Google sign-in completed, but YouTube Music rejected this OAuth connection. Signing in again may not help. Your existing connection and downloads are unchanged.',
     'youtube_network_error':'Could not finish reading your likes. Check your connection and try again.',
     'already_running':'A sync is finishing. Please try connecting again in a moment.',
     'setup_cancelled':'Sign-in cancelled. Your existing connection is unchanged.',
@@ -71,7 +73,15 @@ def complete_setup(root, record, output, *, automatic=True,allow_account_change=
     with RunLock(root):
         state=State(root)
         try:
-            result=connect_account(state,root,record,allow_account_change=allow_account_change)
+            if record.get('kind')=='google_oauth':
+                atomic_write(root/'google-pending.dpapi',dpapi(json.dumps({'created':time.time(),'record':record}).encode()))
+            try:
+                result=connect_account(state,root,record,allow_account_change=allow_account_change)
+            except SyncError as error:
+                if error.code == 'youtube_music_oauth_rejected':
+                    (root/'google-pending.dpapi').unlink(missing_ok=True)
+                raise
+            (root/'google-pending.dpapi').unlink(missing_ok=True)
             settings=installation_settings(root)
             settings['output']=str(destination)
             atomic_write(root/'config.json',json.dumps(settings,indent=2).encode())
@@ -129,7 +139,7 @@ def run_setup(root, *, allow_account_change=False):
     actions=ttk.Frame(content,style='Setup.TFrame')
     actions.grid(row=7,column=0,sticky='ew')
     events=queue.Queue()
-    current={'flow':None,'busy':False,'closed':False,'commit':False}
+    current={'flow':None,'busy':False,'closed':False,'commit':False,'candidate':None}
     guard=threading.Lock()
     result=[]
 
@@ -153,7 +163,8 @@ def run_setup(root, *, allow_account_change=False):
         current['flow']=flow
         def work():
             try:
-                record=flow.run(lambda:events.put(('status','Approve access in your browser. This window will finish automatically.')))
+                record=current['candidate'] or flow.run(lambda:events.put(('status','Approve access in your browser. This window will finish automatically.')))
+                current['candidate']=record
                 with guard:
                     if current['closed'] or flow.cancelled.is_set():
                         return
@@ -185,6 +196,8 @@ def run_setup(root, *, allow_account_change=False):
                 return
             current['closed']=True
             if current['flow']: current['flow'].cancel()
+            current['candidate']=None
+            (root/'google-pending.dpapi').unlink(missing_ok=True)
         window.destroy()
 
     connect=ttk.Button(actions,text='Sign in with Google',style='Setup.TButton',command=start)
@@ -207,6 +220,12 @@ def run_setup(root, *, allow_account_change=False):
             if kind=='status': status.set(value)
             elif kind=='error':
                 busy(False)
+                if value in ('youtube_response_changed','incomplete_likes_snapshot','youtube_network_error','already_running') and current['candidate']:
+                    connect.configure(text='Retry library check')
+                else:
+                    current['candidate']=None
+                    (root/'google-pending.dpapi').unlink(missing_ok=True)
+                    connect.configure(text='Sign in with Google')
                 status.set(MESSAGES.get(value,'Could not finish connecting. Your existing connection is unchanged. Please try again.'))
             else:
                 busy(False)

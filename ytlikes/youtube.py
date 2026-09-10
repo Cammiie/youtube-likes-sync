@@ -117,6 +117,7 @@ class CompleteYTMusic(YTMusic):
 
 class YouTube:
     def __init__(self, headers: dict, client=None, root=None):
+        self.oauth = headers.get('kind') == 'google_oauth'
         session = TimedSession()
         if headers.get('kind') == 'google_oauth':
             from .google_auth import ProtectedCredentials
@@ -157,6 +158,8 @@ class YouTube:
         except (YTMusicUserError, YTMusicServerError) as e:
             # Inspect in memory only; upstream error messages can contain request details.
             message = str(e).lower()
+            if self.oauth and '400' in message and 'invalid argument' in message:
+                raise SyncError('youtube_music_oauth_rejected') from None
             if any(s in message for s in ("401", "403", "sign in", "login", "authentication", "not authenticated")):
                 raise SyncError("youtube_auth_required") from None
             raise SyncError("youtube_response_changed") from None
