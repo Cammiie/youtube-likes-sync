@@ -57,6 +57,8 @@ def sync(state, youtube, provider, downloader, settings, *, dry_run=False):
             if not job["candidate"]:
                 candidate = provider.metadata(candidate)
                 candidate["match_score"] = round(score(source, candidate), 3)
+            if settings.get('download_engine') == 'antra_tidal':
+                candidate = dict(candidate, transport='antra_tidal')
             target = (state.downloaded(candidate["id"]) or (Path(job["path"]) if job["path"] else None)
                       or destination(Path(settings["output"]), candidate))
             state.selected(job["video_id"], candidate, target)
@@ -66,7 +68,7 @@ def sync(state, youtube, provider, downloader, settings, *, dry_run=False):
         except SyncError as error:
             state.fail(job["video_id"], error)
             failed += 1
-            if error.code in ('api_access_required', 'provider_rate_limited', 'browser_mode_validation_required') or error.code.startswith('monochrome_verification'):
+            if error.code in ('api_access_required', 'provider_rate_limited', 'provider_unavailable', 'browser_mode_validation_required') or error.code.startswith('monochrome_verification'):
                 break  # Shared API access/rate failures apply to the rest of this batch.
         except Exception:
             # Third-party exception text may include transport secrets; persist only a fixed code.

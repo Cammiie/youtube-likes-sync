@@ -1,4 +1,4 @@
-#define AppVersion "0.3.0"
+#define AppVersion "0.4.0"
 [Setup]
 AppId={{BB3EFEE4-969E-4722-97EA-DA590EE610C3}
 AppName=YouTube Likes Sync
@@ -30,8 +30,11 @@ Source: "..\dist\YouTubeLikesSync\*"; DestDir: "{app}"; Flags: ignoreversion rec
 Name: "{group}\Connect YouTube Music"; Filename: "{app}\YouTubeLikesSync.exe"; Parameters: "setup"
 Name: "{group}\Pause Sync"; Filename: "{app}\YouTubeLikesSync.exe"; Parameters: "cli pause --quiet"
 Name: "{group}\Resume Sync"; Filename: "{app}\YouTubeLikesSync.exe"; Parameters: "cli resume --quiet"
-Name: "{group}\Open downloader"; Filename: "{app}\YouTubeLikesSync.exe"; Parameters: "cli open-monochrome --quiet"
+Name: "{group}\Downloader status"; Filename: "{app}\YouTubeLikesSync.exe"; Parameters: "download-status"
 Name: "{group}\Uninstall YouTube Likes Sync"; Filename: "{uninstallexe}"
+
+[InstallDelete]
+Type: files; Name: "{group}\Open downloader.lnk"
 
 [Run]
 Filename: "{app}\YouTubeLikesSync.exe"; Parameters: "install-integration"; Flags: runhidden waituntilterminated; Check: EnableIntegration

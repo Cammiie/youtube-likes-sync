@@ -76,10 +76,11 @@ def self_test():
         outgoing.seek(0); assert read_message(outgoing)['type'] == 'ready'
         assert read_message(outgoing)['type'] == 'error'
         assert (assets_dir()/'extension/popup.html').is_file()
-        assert (engine_dir(root)/'worker.html').is_file()
+        from .antra import AntraCatalog
+        assert AntraCatalog.track({'id': '1', 'title': 'Synthetic', 'artist': 'Test'})['id'] == '1'
         # Tk initialization validates the packaged Tcl/Tk without showing a window.
         window = tkinter.Tk(); window.withdraw(); window.update(); window.destroy()
-    print(json.dumps({'result':'passed','checks':['dpapi','sqlite','flac_decode','native_messaging','browser_assets','tk']}))
+    print(json.dumps({'result':'passed','checks':['dpapi','sqlite','flac_decode','native_messaging','native_provider','tk']}))
     return 0
 
 
@@ -96,5 +97,12 @@ def main():
     if route == 'install-integration': return install_integration()
     if route == 'uninstall-integration': return uninstall_integration()
     if route == 'self-test': return self_test()
+    if route == 'download-status':
+        from .download_status import show
+        return show()
     from .cli import main as cli_main
     return cli_main(args if route == 'cli' else [route, *args])
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

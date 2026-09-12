@@ -4,7 +4,6 @@ from PyInstaller.utils.hooks import collect_all, collect_data_files, copy_metada
 
 root = Path(SPECPATH).parent
 data = [(str(root/'extension'), 'extension'), (str(root/'schedule.ps1'), '.'),
-        (str(root/'build-assets/browser-engine'), 'browser-engine'),
         (str(root/'build-assets/licenses'), 'licenses')]
 binaries, hidden = [], []
 for module in ('ytmusicapi', 'pystray', 'imageio_ffmpeg', 'mutagen'):

@@ -26,5 +26,5 @@ $logon = New-ScheduledTaskTrigger -AtLogOn -User $identity
 $repeat = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(1) -RepetitionInterval (New-TimeSpan -Minutes 5)
 $principal = New-ScheduledTaskPrincipal -UserId $identity -LogonType Interactive -RunLevel Limited
 $settings = New-ScheduledTaskSettingsSet -Hidden -StartWhenAvailable -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit (New-TimeSpan -Hours 1)
-Register-ScheduledTask -TaskName $taskName -Action $actionSpec -Trigger @($logon, $repeat) -Principal $principal -Settings $settings -Description 'Fetch future YouTube Music likes and download matching Monochrome FLAC tracks. Waits safely until local account setup is complete.' -Force | Out-Null
+Register-ScheduledTask -TaskName $taskName -Action $actionSpec -Trigger @($logon, $repeat) -Principal $principal -Settings $settings -Description 'Fetch future YouTube Music likes and download matching FLAC tracks without a downloader browser. Waits safely until local account setup is complete.' -Force | Out-Null
 Write-Output 'Installed: every five minutes and at sign-in; runs hidden as the current user.'

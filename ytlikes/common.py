@@ -42,7 +42,7 @@ def atomic_write(path: Path, data: bytes) -> None:
 
 def config(root: Path) -> dict:
     defaults = {"output": str(Path.home() / "Music" / "YouTube Likes"),
-                "download_engine": "unified_native",
+                "download_engine": "antra_tidal",
                 "browser_launch_allowed": False,
                 "browser_window_mode": "minimized",
                 "browser_downloads_ready": True,

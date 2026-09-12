@@ -9,6 +9,8 @@ import subprocess
 import sys
 
 from .common import SyncError, RunLock, atomic_write, config, data_dir, load_auth, save_auth
+from .antra import AntraCatalog, AntraDownloader, access_status, save_access
+from .migration import migrate
 from .media import Downloader
 from .browser_download import BrowserDownloader, ensure_host, BASE, reset_browser_retry
 from .browser_host import browser_status
@@ -111,15 +113,16 @@ def scheduler(action):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="Automatically save future YouTube Music likes as Monochrome FLAC.")
+    parser = argparse.ArgumentParser(description="Automatically save future YouTube Music likes as validated FLAC.")
     parser.add_argument("command", choices=["setup", "setup-google", "setup-headers", "setup-clipboard", "sync", "dry-run", "status", "retry", "pause", "resume", "doctor",
-                                            "install-scheduler", "remove-scheduler", "open-monochrome", "monochrome-status", "configure-api", "api-status"])
+                                            "install-scheduler", "remove-scheduler", "open-monochrome", "monochrome-status", "configure-api", "api-status", "migrate"])
     parser.add_argument("--data-dir", type=Path, default=data_dir())
     parser.add_argument("--quiet", action="store_true")
     parser.add_argument("--switch-account", action="store_true",help="Explicitly connect another account while preserving downloaded files and prior baselines.")
     args = parser.parse_args(argv)
     root = args.data_dir
     state = None
+    provider = downloader = None
     try:
         if args.command == 'setup':
             from .extension_setup import run_setup
@@ -137,7 +140,7 @@ def main(argv=None):
         state = State(root)
         settings = config(root)
         if args.command == 'api-status':
-            emit(session_status(root), args.quiet)
+            emit(access_status(root) if settings['download_engine'] == 'antra_tidal' else session_status(root), args.quiet)
             return 0
         if args.command in ('open-monochrome', 'monochrome-status'):
             if not settings.get('browser_launch_allowed', False):
@@ -162,10 +165,10 @@ def main(argv=None):
                            "browser_launch_allowed": settings.get('browser_launch_allowed') is True,
                            "browser_window_mode":settings.get('browser_window_mode','minimized'),
                            "browser_downloads_ready":settings.get('browser_downloads_ready',True),
-                           "browser_status":browser_status(root),
-                           "api":session_status(root),
+                           "browser_status":{'browser':'disabled'} if settings['download_engine'] == 'antra_tidal' else browser_status(root),
+                           "api":access_status(root) if settings["download_engine"] == "antra_tidal" else session_status(root),
                            "auto_api_renewal":settings.get('auto_api_renewal') is True,
-                           "api_renewal":renewal_status(root),
+                           "api_renewal":{'status':'disabled'} if settings['download_engine'] == 'antra_tidal' else renewal_status(root),
                            "allow_encrypted_lossless": settings.get('allow_encrypted_lossless') is True})
             emit(result, args.quiet)
             return 0
@@ -174,14 +177,16 @@ def main(argv=None):
             emit({"status": args.command}, args.quiet)
             return 0
         with RunLock(root):
+            if args.command != "dry-run":
+                settings = migrate(state, root, settings)
             if args.command == 'configure-api':
                 import getpass
                 if not sys.stdin.isatty():
                     raise SyncError('api_configuration_requires_local_terminal')
-                base = input('Unified API base URL [https://music-api.geeked.wtf]: ').strip() or 'https://music-api.geeked.wtf'
+                base = input('Compatible Tidal mirror HTTPS endpoint: ').strip()
                 token = getpass.getpass('API credential (hidden; stored with Windows DPAPI): ')
-                save_session(root, {'base':base, 'token':token, 'verification_required':False})
-                settings.update(download_engine='unified_native', browser_launch_allowed=False, api_migration_pending=False)
+                save_access(root, {'endpoint':base, 'key':token})
+                settings.update(download_engine='antra_tidal', browser_launch_allowed=False, api_migration_pending=False)
                 atomic_write(root/'config.json', json.dumps(settings, indent=2).encode())
                 state.retry()
                 result = {'status':'api_configured', 'note':'Access will be checked on the next download; no browser will open.'}
@@ -206,17 +211,23 @@ def main(argv=None):
                 state.set("poll_retry_at", 0)
                 state.set("poll_failures", 0)
                 result = {"status": "pending_tracks_will_retry_on_next_check"}
+            elif args.command == "migrate":
+                result = {"status": "browserless_ready", "download_engine": settings['download_engine']}
             elif args.command == "doctor":
-                result = {"catalog_servers": doctor(Monochrome(root, settings))}
+                provider = AntraCatalog(root, settings)
+                result = {"provider": "antra_tidal", "browserless": True,
+                          "matches": len(provider.search({"title": "Sextape", "artists": ["Deftones"]}))}
             else:
                 if state.get("paused", False):
                     result = {"status": "paused"}
                 elif state.get("baseline_at") is None:
                     result = {"status": "setup_required", "downloads_started": 0}
                 else:
-                    provider = Monochrome(root, settings)
-                    engine = settings.get('download_engine', 'unified_native')
-                    if engine == 'unified_native':
+                    engine = settings.get('download_engine', 'antra_tidal')
+                    provider = AntraCatalog(root, settings) if engine == 'antra_tidal' else Monochrome(root, settings)
+                    if engine == 'antra_tidal':
+                        downloader = AntraDownloader(provider, settings)
+                    elif engine == 'unified_native':
                         downloader = UnifiedDownloader(provider, settings, root)
                     elif engine == 'monochrome':
                         downloader = BrowserDownloader(provider, settings)
@@ -241,6 +252,10 @@ def main(argv=None):
         emit({"error": "unexpected_error"}, args.quiet)
         return 2
     finally:
+        if downloader:
+            downloader.session.close()
+        if provider and hasattr(provider, "close"):
+            provider.close()
         if state:
             state.close()
 

@@ -17,6 +17,8 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'Download configuration failed.' }
     & '.\.venv\Scripts\python.exe' -m ytlikes.extension_host --register
     if ($LASTEXITCODE -ne 0) { throw 'Browser connector registration failed.' }
+    & '.\.venv\Scripts\python.exe' -m ytlikes.cli migrate
+    if ($LASTEXITCODE -ne 0) { throw 'Quit the old downloader normally, then retry setup.' }
     $downloadEngine = & '.\.venv\Scripts\python.exe' -c 'from ytlikes.common import config,data_dir; print(config(data_dir())["download_engine"])'
     if ($LASTEXITCODE -ne 0) { throw 'Could not read download configuration.' }
     if ($downloadEngine -eq 'monochrome') {

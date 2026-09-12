@@ -138,7 +138,7 @@ def test_complete_setup_baseline_only_and_reconnect_preserves_it(tmp_path,monkey
     assert state.get('baseline_at')==baseline and not state.status()['jobs']
     state.close()
     assert not second['baseline_created']
-    assert config(tmp_path)['download_engine']=='monochrome'
+    assert config(tmp_path)['download_engine']=='antra_tidal'
 
 
 def test_existing_runtime_settings_preserved(tmp_path):

@@ -1,6 +1,15 @@
+YouTube Likes Sync v0.4.0 uses an original MIT-licensed implementation of the
+Tidal mirror request protocol referenced by Antra revision
+79d3513745a44e999fbf0176fe5d9a21e4b500c4:
+https://github.com/anandprtp/Antra
+No Antra implementation or binaries are copied or distributed. The service
+configuration is retrieved at runtime; no service key or user account token
+is included in source or release assets. CrammyPlayer's tested behavior served
+as a compatibility reference; its GPL implementation is not copied here.
+
 YouTube Likes Sync
 
-This project installs and runs the Monochrome browser download engine from
+Legacy source (inactive in v0.4.0) can build the Monochrome browser engine from
 monochrome-music/monochrome, commit
 60b76d0d9258b9aabc6a9ee83cb8a54bd76ce90b:
 https://github.com/monochrome-music/monochrome
@@ -27,15 +36,15 @@ licensed under GPLv3 or later. FFmpeg source is at https://ffmpeg.org/releases/
 and build/dependency information at https://www.gyan.dev/ffmpeg/builds/.
 Source archives and rebuild references are provided with the release. Users may
 replace the FFmpeg binary or use IMAGEIO_FFMPEG_EXE to select their own build.
-Bundled JavaScript dependency notices are retained under _internal/licenses/JavaScript.
+Version 0.4.0 does not bundle the Monochrome engine or its JavaScript dependencies.
 PyInstaller's bootloader is distributed under its GPL exception for generated
 applications; its notice is included. Python and Tcl/Tk retain their own licenses.
 The unified_native engine in ytlikes/unified.py ports lookup parameters and
 playback resource selection from the same pinned Monochrome api.js. It uses
 native HTTP and FFmpeg stream copy, without browser verification or fallback.
-This installation uses the browser engine with a dedicated normal Edge profile
-and notification-area controls. Native API renewal is disabled. The optional
-native engine and authenticated migration remain available in the source.
+Version 0.4.0 uses browserless antra_tidal audio downloads. Historical browser
+and unified-native code remain for migration/source compatibility, not as an
+automatic fallback. Native browser token renewal is disabled.
 The tray controller subclasses pystray 0.19.5 (LGPLv3), distributed unmodified
 in the virtual environment with COPYING and COPYING.LGPL. Its source is at
 https://github.com/moses-palmer/pystray. psutil and Pillow retain their own

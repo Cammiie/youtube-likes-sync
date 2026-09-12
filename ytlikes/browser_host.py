@@ -471,6 +471,12 @@ class Handler(BaseHTTPRequestHandler):
                     return self.reply({'error':'browser_disabled'}, 403)
                 self.host.open_browser(visible=True)
                 return self.reply({'ok':True})
+            if path == '/shutdown':
+                with self.host.guard:
+                    if any(job['state'] in ('claimed','running','receiving') for job in self.host.jobs.values()):
+                        return self.reply({'error':'download_active'}, 409)
+                    self.host.stopping.set()
+                return self.reply({'ok':True})
             if path == '/hide':
                 self.host.action('hide')
                 return self.reply({'ok':True})

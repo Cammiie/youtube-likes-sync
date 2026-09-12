@@ -29,9 +29,9 @@ def suggested_output():
 def installation_settings(root):
     settings=config(root)
     if not (root/'config.json').exists():
-        settings.update(output=suggested_output(), download_engine='monochrome',browser_launch_allowed=True,
+        settings.update(output=suggested_output(), download_engine='antra_tidal',browser_launch_allowed=False,
                         browser_window_mode='tray',browser_downloads_ready=True,auto_api_renewal=False,
-                        api_migration_pending=False,allow_encrypted_lossless=True)
+                        api_migration_pending=False,allow_encrypted_lossless=False)
     return settings
 
 
